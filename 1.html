@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>真心话大冒险 · Vérité</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+
+  :root {
+    --bg-deep: #08080f;
+    --bg-card: rgba(18, 18, 36, 0.75);
+    --gold: #c9a96e;
+    --gold-light: #e0c78a;
+    --gold-dim: #8a7040;
+    --text: #e0d8cc;
+    --text-dim: #9a9488;
+    --text-bright: #f5efe4;
+    --accent-truth: #6eb5c9;
+    --accent-dare: #c97e6e;
+    --border: rgba(201, 169, 110, 0.18);
+    --glow-truth: rgba(110, 181, 201, 0.5);
+    --glow-dare: rgba(201, 126, 110, 0.5);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-deep);
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    color: var(--text);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Subtle background grain via pseudo-element */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    background-size: 256px 256px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Canvas Background ── */
+  #particles {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Ambient Glow Orbs ── */
+  .ambient-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.06;
+    pointer-events: none;
+    z-index: 0;
+    animation: orbDrift 20s ease-in-out infinite;
+  }
+  .ambient-orb.orb-1 { width: 500px; height: 500px; background: #c9a96e; top: -15%; left: -10%; animation-delay: 0s; }
+  .ambient-orb.orb-2 { width: 400px; height: 400px; background: #6eb5c9; bottom: -10%; right: -8%; animation-delay: -7s; }
+  .ambient-orb.orb-3 { width: 350px; height: 350px; background: #c97e6e; top: 40%; left: 55%; animation-delay: -14s; }
+
+  @keyframes orbDrift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(40px, -30px) scale(1.15); }
+    50% { transform: translate(-20px, 20px) scale(0.9); }
+    75% { transform: translate(-30px, -10px) scale(1.05); }
+  }
+
+  /* ── Main Container ── */
+  .app {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 560px;
+    padding: 24px 20px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 28px;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+  }
+  .header .brand {
+    font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+    font-size: 2.4rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    font-style: italic;
+    line-height: 1;
+  }
+  .header .subtitle {
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── Mode Toggle ── */
+  .mode-toggle {
+    display: flex;
+    background: rgba(255,255,255,0.03);
+    border-radius: 40px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    gap: 2px;
+  }
+  .mode-btn {
+    padding: 10px 28px;
+    border-radius: 36px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.04em;
+    position: relative;
+  }
+  .mode-btn.active {
+    color: var(--text-bright);
+    font-weight: 500;
+  }
+  .mode-btn.active.truth-mode {
+    background: rgba(110, 181, 201, 0.15);
+    box-shadow: 0 0 24px var(--glow-truth);
+  }
+  .mode-btn.active.dare-mode {
+    background: rgba(201, 126, 110, 0.15);
+    box-shadow: 0 0 24px var(--glow-dare);
+  }
+  .mode-btn:hover:not(.active) {
+    color: var(--text);
+    background: rgba(255,255,255,0.03);
+  }
+  .mode-icon { margin-right: 6px; }
+
+  /* ── Category Pills ── */
+  .categories {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 8px;
+  }
+  .cat-pill {
+    padding: 7px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    font-family: 'Noto Sans SC', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .cat-pill:hover {
+    border-color: rgba(201, 169, 110, 0.4);
+    color: var(--text);
+    background: rgba(201, 169, 110, 0.06);
+  }
+  .cat-pill.active {
+    border-color: var(--gold);
+    background: rgba(201, 169, 110, 0.12);
+    color: var(--gold-light);
+    font-weight: 500;
+    box-shadow: 0 0 16px rgba(201, 169, 110, 0.1);
+  }
+
+  /* ── Card Container ── */
+  .card-stage {
+    position: relative;
+    width: 100%; max-width: 420px;
+    height: 360px;
+    perspective: 1000px;
+  }
+
+  .card-wrapper {
+    position: absolute; inset: 0;
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    transform-style: preserve-3d;
+  }
+
+  /* ── The Card ── */
+  .card {
+    position: absolute; inset: 0;
+    border-radius: 24px;
+    background: var(--bg-card);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 44px 38px;
+    text-align: center;
+    box-shadow:
+      0 8px 48px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.03);
+    transition: all 0.5s ease;
+    overflow: hidden;
+  }
+
+  /* Card decorative corner accents */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 18px; left: 18px;
+    width: 28px; height: 28px;
+    border-top: 1px solid rgba(201, 169, 110, 0.3);
+    border-left: 1px solid rgba(201, 169, 110, 0.3);
+  }
+  .card::after {
+    content: '';
+    position: absolute;
+    bottom: 18px; right: 18px;
+    width: 28px; height: 28px;
+    border-bottom: 1px solid rgba(201, 169, 110, 0.3);
+    border-right: 1px solid rgba(201, 169, 110, 0.3);
+  }
+
+  /* Card inner decorative line */
+  .card-decoration {
+    position: absolute;
+    inset: 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(201, 169, 110, 0.08);
+    pointer-events: none;
+  }
+
+  /* Card surface shimmer */
+  .card-shimmer {
+    position: absolute; inset: 0;
+    background: linear-gradient(
+      135deg,
+      transparent 0%,
+      rgba(255,255,255,0.015) 45%,
+      rgba(255,255,255,0.03) 50%,
+      rgba(255,255,255,0.015) 55%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Card type badge */
+  .card-type-badge {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    font-style: italic;
+    opacity: 0.8;
+  }
+
+  /* Card content */
+  .card-content {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--text-bright);
+    line-height: 1.75;
+    letter-spacing: 0.03em;
+    position: relative; z-index: 1;
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    word-break: break-word;
+  }
+  .card-content::-webkit-scrollbar { display: none; }
+
+  /* Card category tag */
+  .card-cat-tag {
+    margin-top: 16px;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  /* Card glow on type */
+  .card.truth-card {
+    box-shadow:
+      0 8px 48px rgba(0,0,0,0.5),
+      0 0 2px var(--glow-truth),
+      inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .card.dare-card {
+    box-shadow:
+      0 8px 48px rgba(0,0,0,0.5),
+      0 0 2px var(--glow-dare),
+      inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  /* Card entrance animation */
+  .card.entering {
+    animation: cardEnter 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  @keyframes cardEnter {
+    0%   { transform: scale(0.88); opacity: 0; }
+    50%  { transform: scale(1.03); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* card leaving */
+  .card.leaving {
+    animation: cardLeave 0.3s ease-in forwards;
+  }
+  @keyframes cardLeave {
+    to { transform: scale(0.92); opacity: 0; }
+  }
+
+  /* ── Draw Button ── */
+  .draw-btn {
+    position: relative;
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    background: rgba(201, 169, 110, 0.08);
+    color: var(--gold-light);
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.35s ease;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .draw-btn:hover {
+    background: rgba(201, 169, 110, 0.18);
+    box-shadow: 0 0 40px rgba(201, 169, 110, 0.25);
+    transform: scale(1.06);
+  }
+  .draw-btn:active {
+    transform: scale(0.94);
+    transition: transform 0.1s ease;
+  }
+  .draw-btn.pulse {
+    animation: btnPulse 2s ease-in-out infinite;
+  }
+  @keyframes btnPulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(201, 169, 110, 0.15); }
+    50% { box-shadow: 0 0 36px rgba(201, 169, 110, 0.35); }
+  }
+
+  /* ── Bottom Bar ── */
+  .bottom-bar {
+    display: flex; align-items: center; gap: 24px;
+    font-size: 0.7rem; color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+  .stat { display: flex; align-items: center; gap: 6px; }
+  .stat-val { color: var(--gold); font-weight: 500; font-size: 0.85rem; }
+
+  /* ── History Drawer ── */
+  .history-toggle {
+    background: none; border: none;
+    color: var(--text-dim);
+    font-size: 0.72rem; cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: color 0.3s;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .history-toggle:hover { color: var(--gold); }
+
+  .history-panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(12, 12, 28, 0.95);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-top: 1px solid var(--border);
+    z-index: 10;
+    max-height: 45vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 20px 20px 0 0;
+  }
+  .history-panel.open { transform: translateY(0); }
+  .history-inner { padding: 24px 20px; max-width: 560px; margin: 0 auto; }
+  .history-inner h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400; font-style: italic;
+    color: var(--gold); font-size: 1.1rem;
+    margin-bottom: 16px; letter-spacing: 0.06em;
+  }
+  .history-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.82rem;
+  }
+  .history-item .h-type {
+    font-size: 0.65rem; padding: 2px 8px; border-radius: 10px;
+    flex-shrink: 0; font-weight: 500;
+  }
+  .h-type.truth { background: rgba(110,181,201,0.15); color: var(--accent-truth); }
+  .h-type.dare { background: rgba(201,126,110,0.15); color: var(--accent-dare); }
+  .history-item .h-text { color: var(--text); line-height: 1.5; }
+  .history-empty { color: var(--text-dim); font-size: 0.8rem; text-align: center; padding: 20px 0; }
+  .history-clear {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 0.7rem; cursor: pointer; margin-top: 12px;
+    letter-spacing: 0.06em;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .history-clear:hover { color: var(--accent-dare); }
+
+  .history-overlay, .remain-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 9; opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .history-overlay.show, .remain-overlay.show { opacity: 1; pointer-events: auto; }
+
+  /* ── Remaining Cards Panel ── */
+  .remain-toggle {
+    background: none; border: none;
+    color: var(--text-dim);
+    font-size: 0.72rem; cursor: pointer;
+    letter-spacing: 0.08em;
+    transition: color 0.3s;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .remain-toggle:hover { color: var(--gold); }
+
+  .remain-panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(12, 12, 28, 0.96);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-top: 1px solid var(--border);
+    z-index: 10;
+    max-height: 50vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 20px 20px 0 0;
+  }
+  .remain-panel.open { transform: translateY(0); }
+  .remain-inner { padding: 24px 20px; max-width: 560px; margin: 0 auto; }
+  .remain-inner h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400; font-style: italic;
+    color: var(--gold); font-size: 1.1rem;
+    margin-bottom: 6px; letter-spacing: 0.06em;
+  }
+  .remain-subtitle {
+    font-size: 0.68rem; color: var(--text-dim);
+    margin-bottom: 18px; letter-spacing: 0.04em;
+  }
+  .remain-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  @media (max-width: 480px) {
+    .remain-grid { grid-template-columns: 1fr; }
+  }
+  .remain-card-mini {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.76rem;
+    color: var(--text);
+    line-height: 1.5;
+    position: relative;
+    transition: all 0.25s ease;
+    cursor: default;
+  }
+  .remain-card-mini:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(201, 169, 110, 0.2);
+  }
+  .remain-card-mini.truth-card-mini { border-left: 2px solid var(--accent-truth); }
+  .remain-card-mini.dare-card-mini { border-left: 2px solid var(--accent-dare); }
+  .remain-card-mini .rm-index {
+    font-size: 0.6rem; color: var(--text-dim);
+    margin-bottom: 4px; letter-spacing: 0.04em;
+  }
+  .remain-empty {
+    color: var(--text-dim); font-size: 0.8rem; text-align: center;
+    padding: 28px 0; grid-column: 1 / -1;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(18,18,36,0.9); backdrop-filter: blur(16px);
+    border: 1px solid var(--gold);
+    color: var(--gold-light);
+    padding: 10px 24px; border-radius: 24px;
+    font-size: 0.78rem; z-index: 20;
+    letter-spacing: 0.04em;
+    animation: toastIn 0.4s ease, toastOut 0.4s ease 1.6s forwards;
+    pointer-events: none;
+  }
+  @keyframes toastIn  { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+
+  /* ── Shuffle hint ── */
+  .shuffle-hint {
+    font-size: 0.65rem; color: var(--text-dim);
+    letter-spacing: 0.06em;
+    opacity: 0; transition: opacity 0.5s ease;
+  }
+  .shuffle-hint.visible { opacity: 0.6; }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .app { padding: 16px 12px; gap: 20px; }
+    .header .brand { font-size: 2rem; }
+    .card-stage { height: 320px; }
+    .card { padding: 30px 24px; border-radius: 20px; }
+    .card::before, .card::after { width: 20px; height: 20px; }
+    .card-content { font-size: 1.02rem; max-height: 170px; }
+    .cat-pill { padding: 6px 12px; font-size: 0.7rem; }
+    .mode-btn { padding: 8px 18px; font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient-orb orb-1"></div>
+<div class="ambient-orb orb-2"></div>
+<div class="ambient-orb orb-3"></div>
+<canvas id="particles"></canvas>
+
+<div class="app">
+  <div class="header">
+    <div class="brand">Vérité</div>
+    <div class="subtitle">Truth &amp; Dare · 真心话大冒险</div>
+  </div>
+
+  <div class="mode-toggle" id="modeToggle">
+    <button class="mode-btn truth-mode active" data-mode="truth">
+      <span class="mode-icon">&#9670;</span>真心话
+    </button>
+    <button class="mode-btn dare-mode" data-mode="dare">
+      <span class="mode-icon">&#9671;</span>大冒险
+    </button>
+  </div>
+
+  <div class="categories" id="categories"></div>
+
+  <div class="card-stage" id="cardStage">
+    <div class="card-wrapper">
+      <div class="card" id="theCard">
+        <div class="card-shimmer"></div>
+        <div class="card-decoration"></div>
+        <div class="card-type-badge" id="cardBadge">TRUTH</div>
+        <div class="card-content" id="cardContent">
+          点击下方按钮<br>抽取你的第一张卡牌
+        </div>
+        <div class="card-cat-tag" id="cardCatTag"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="draw-btn pulse" id="drawBtn" title="抽取卡牌">
+    &#9864;
+  </button>
+
+  <div class="bottom-bar">
+    <div class="stat"><span>已抽</span><span class="stat-val" id="statDrawn">0</span></div>
+    <div class="stat"><span>剩余</span><span class="stat-val" id="statRemain">0</span></div>
+    <button class="remain-toggle" id="remainToggle">牌堆 ▸</button>
+    <button class="history-toggle" id="historyToggle">历史 ▸</button>
+  </div>
+
+  <div class="shuffle-hint" id="shuffleHint">卡牌已重新洗牌</div>
+</div>
+
+<div class="history-overlay" id="historyOverlay"></div>
+<div class="history-panel" id="historyPanel">
+  <div class="history-inner">
+    <h3>历史记录</h3>
+    <div id="historyList"></div>
+    <button class="history-clear" id="historyClear">清除记录</button>
+  </div>
+</div>
+
+<div class="remain-overlay" id="remainOverlay"></div>
+<div class="remain-panel" id="remainPanel">
+  <div class="remain-inner">
+    <h3>当前牌堆</h3>
+    <div class="remain-subtitle" id="remainSubtitle"></div>
+    <div class="remain-grid" id="remainGrid"></div>
+  </div>
+</div>
+
+<script>
+// ────────────────────────
+//  PARTICLE SYSTEM
+// ────────────────────────
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let animFrame;
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+class Particle {
+  constructor() {
+    this.reset(true);
+  }
+  reset(init) {
+    this.x = Math.random() * canvas.width;
+    this.y = init ? Math.random() * canvas.height : canvas.height + 10;
+    this.size = Math.random() * 1.5 + 0.5;
+    this.speedY = -(Math.random() * 0.35 + 0.08);
+    this.speedX = (Math.random() - 0.5) * 0.2;
+    this.opacity = Math.random() * 0.5 + 0.1;
+    this.fadeSpeed = Math.random() * 0.003 + 0.001;
+    this.twinkle = Math.random() * Math.PI * 2;
+  }
+  update() {
+    this.y += this.speedY;
+    this.x += this.speedX;
+    this.twinkle += 0.02;
+    if (this.y < -10 || this.x < -10 || this.x > canvas.width + 10) {
+      this.reset(false);
+    }
+  }
+  draw() {
+    const twinkleOpacity = this.opacity + Math.sin(this.twinkle) * 0.15;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(201, 169, 110, ${Math.max(0, twinkleOpacity)})`;
+    ctx.fill();
+  }
+}
+
+for (let i = 0; i < 80; i++) {
+  particles.push(new Particle());
+}
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+  animFrame = requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ────────────────────────
+//  CARD DATA
+// ────────────────────────
+const cardDecks = {
+  classic: {
+    name: '经典',
+    icon: '◆',
+    truths: [
+      '你最近一次说谎是什么时候？对谁说的？',
+      '如果可以和任意一位异性共进晚餐，你会选谁？',
+      '你人生中做的最尴尬的事情是什么？',
+      '你私下有什么奇怪的癖好？',
+      '上一次哭是因为什么？',
+      '你最害怕失去的东西是什么，为什么？',
+      '你觉得自己最大的缺点是什么，为什么？',
+      '如果明天就是世界末日，你今天会做什么，为什么？',
+      '你暗恋过的最不可能的人是谁？',
+      '你手机里最不想让别人看到的是什么？',
+      '你做过的最后悔的决定是什么？',
+      '你最想对谁说对不起？为什么？',
+      '你上一次感到真正快乐是因为什么？',
+      '你最引以为傲但很少提起的事情是什么？',
+      '你在朋友中的外号是什么？喜欢吗？',
+      '你觉得自己五年后会是什么样子？',
+      '你最大的优点是什么？',
+      '你最想改变自己身上的哪一点？',
+      '你心目中的完美周末是什么样的？',
+      '你最舍不得删除的一张照片是什么（需展示）？'
+    ],
+    dares: [
+      '模仿一位在场的人，让大家猜是谁',
+      '给微信里第三个人打字说"我想你了"',
+      '用独特的方式介绍一下自己',
+      '闭眼原地转五圈然后走直线',
+      '唱一首流行歌曲的副歌',
+      '做十个俯卧撑（女生五个）并大喊"我可以的"',
+      '和一本书/杯子深情对视十秒钟',
+      '模仿猫猫叫声和动作',
+      '用三种不同方式撒娇',
+      '用肢体语言表演一部电影，让大家猜',
+      '把袜子脱下来戴在手上保持一分钟',
+      '对着窗外大喊一声',
+      '用最夸张的方式大笑',
+      '单脚站立读完一段深情的话',
+      '用左手写你的名字（如果是左撇子就用右手）',
+      '不许笑，让旁边的人逗你笑坚持十五秒',
+      '用三种不同的语调说"我错了"',
+      '表演一段没有道具的魔术',
+      '用最慢的速度喝一口水，从举杯到放下至少十秒',
+      '即兴用三个关键词编一个一分钟的故事'
+    ]
+  },
+  latenight: {
+    name: '深夜',
+    icon: '🌙',
+    truths: [
+      '你人生中最大胆的一次冒险是什么？',
+      '你有过什么秘密从未告诉过别人，是什么？',
+      '你最疯狂的幻想是什么（指定是人）？',
+      '你在感情中做过最出格的事是什么？',
+      '你最想尝试但一直没有勇气去做的事？',
+      '你上一次喝醉后发生了什么？',
+      '你的搜索记录里最不想被看到的关键词是什么？',
+      '你认为最被高估的东西是什么？',
+      '你对在场哪一位最有好感？',
+      '你私下里对某个社会规则的叛逆是什么？',
+      '你曾经为了引起某人注意做过什么傻事？',
+      '你最不为人知的才华是什么？',
+      '你最近一次心跳加速是因为什么？',
+      '如果今晚可以做任何事而不被任何人知道，你会做什么？',
+      '你对外表最不自信的部位是哪里？',
+      '你在恋爱中最"作"的一次经历是什么？',
+      '如果让你用一种颜色形容你现在的内心，是什么颜色？',
+      '你最想撕掉自己身上的什么标签？',
+      '你上一次说"我爱你"是真心的吗？',
+      '你觉得最被低估的一种快乐是什么？'
+    ],
+    dares: [
+      '给前任发一条"最近还好吗"（如果可以的话）',
+      '在社交媒体发一条只有emoji的动态，保持一小时',
+      '用最撩人的声线读一段天气预报',
+      '闭上眼让旁边的人在你手心写一个字，猜出来',
+      '和你右手边的人十指相扣十秒钟',
+      '对着镜子夸自己十秒不准停',
+      '展示你手机相册里最近保存的第五张照片',
+      '哼一首歌的完整旋律',
+      '和左手边的人对视十五秒不准笑',
+      '做三个让你觉得最尴尬的表情',
+      '说一段暧昧的话让所有人听清',
+      '现场编排一段五秒的舞蹈（手势舞十秒）',
+      '对一位异性说一句真诚的赞美',
+      '给最近通话的人发一条语音消息说"你开心吗"',
+      '含一口水，听大家讲笑话，坚持三十秒不喷',
+      '把你认为最性感的走路方式走一圈',
+      '在纸上画你理想型的样子，展示给大家看',
+      '用你最慵懒的姿势靠在椅子上保持一分钟',
+      '模仿一个名人的经典台词，要尽量像',
+      '闭眼摸三样东西，猜出它们是什么'
+    ]
+  },
+  party: {
+    name: '派对',
+    icon: '🎉',
+    truths: [
+      '你觉得在场谁最有可能是隐藏的富二代？',
+      '你小时候最离谱的梦想是什么？',
+      '你做过最"社死"的事情是什么？',
+      '你私下给谁起过外号？是什么？',
+      '你最想和哪位名人互换一天人生？',
+      '你上一次撒谎逃掉的事情是什么？',
+      '你觉得自己最像哪种动物？为什么？',
+      '如果让你用一种食物形容自己，会是什么？',
+      '你的手机壁纸是什么？有什么故事？',
+      '你在公共场合发出奇怪声音后是怎么掩饰的？',
+      '你相信一见钟情还是日久生情？',
+      '你最后一条社交动态在掩饰什么？',
+      '你在KTV的必点曲目是什么？',
+      '你最不擅长的社交场合是什么？',
+      '如果你是一种调味料，你觉得自己是什么味？',
+      '你最常使用的表情包是什么？发出来看看',
+      '如果你能邀请任何三个人参加你的饭局，会请谁？',
+      '你觉得自己最"戏精"的一次经历是什么？',
+      '别人对你最大的误解是什么？',
+      '你最奇怪的起床方式是什么？'
+    ],
+    dares: [
+      '用三种不同的情绪说"我好饿"',
+      '和在场每个人击掌并说一句夸对方的话',
+      '用屁股写出自己名字的笔画',
+      '模仿一个网红/明星的标志性动作',
+      '原地高抬腿跑十秒并保持微笑',
+      '用最认真的语气念一段广告词',
+      '表演一段没有音乐的舞蹈',
+      '说一段rap',
+      '做五个你最搞怪的表情包表情',
+      '不弯曲膝盖捡起地上的一个物品',
+      '给你妈妈/爸爸发"我爱你"',
+      '接受三种食物的投喂且吃完',
+      '用一个手指顶住一本书在头上走三步',
+      '把身边最近的非电子物品顶在头上三十秒',
+      '学一种你完全不会的方言说一段自我介绍',
+      '闭眼画出在场某人的肖像',
+      '用身体拼出一个字母（让在场的人指定）',
+      '表演一个你小时候最喜欢的动画角色',
+      '在不碰到任何东西的情况下蹲下再站起来',
+      '用最夸张的口型无声说一句话，让大家猜'
+    ]
+  },
+  couples: {
+    name: '情侣',
+    icon: '💕',
+    truths: [
+      '我最让你心动的一个瞬间是什么？',
+      '你最想和我一起去的地方是哪里？',
+      '你觉得两个人在一起最重要的是什么？',
+      '你对这段关系最大的担忧是什么？',
+      '你最喜欢我身上的哪个特点？',
+      '你希望我在哪些方面做得更好？',
+      '你第一次见到我时的真实想法是什么？',
+      '你觉得"爱"是什么？',
+      '你最想对我说但一直没说出口的话是什么？',
+      '如果我们的故事是一本书，书名会是什么？',
+      '你理想中的完美约会是什么样的？',
+      '你觉得我们之间最浪漫的时刻是什么？',
+      '我在你心里的"外号"是什么？',
+      '你最想和我一起完成的一件小事是什么？',
+      '你觉得我什么时候最可爱？什么时候最让你头疼？',
+      '如果能一起学一样东西，你最想学什么？',
+      '你最喜欢我们之间的什么小习惯/小仪式？',
+      '你觉得爱情里最需要包容的是什么？',
+      '用一个画面描述你理想中我们五年后的生活',
+      '我做过最让你感动的一件事是什么？'
+    ],
+    dares: [
+      '给对方一个持续十秒以上的拥抱',
+      '看着对方的眼睛认真说一句情话',
+      '用三个词形容对方在你眼中的样子',
+      '模仿对方的一个习惯性动作',
+      '握住对方的手，说一件你感恩的事',
+      '给对方唱一首歌',
+      '闭眼让对方牵着走一段',
+      '在对方手心画一颗心',
+      '用额头贴着对方额头保持十秒',
+      '把对方最喜欢的一个细节说出来',
+      '为对方即兴创作一句诗',
+      '轻轻捏一下对方的脸然后说"你真可爱"',
+      '让对方选一首歌，你跟着节奏即兴舞动',
+      '背靠背站着，同时转头对视，看谁先笑',
+      '用三种不同的语言说"我爱你"',
+      '用一张纸折出一样东西送给对方',
+      '把对方的手翻过来，在掌心轻轻写一个词让对方猜',
+      '给彼此起一个新的专属称呼，今天就用来叫对方',
+      '拿出手机，拍一张两人都满意的合影',
+      '说出对方的三个优点，每说一个就靠近一步'
+    ]
+  },
+  crazy: {
+    name: '疯狂',
+    icon: '🔥',
+    truths: [
+      '你这辈子做过最疯狂的事是什么？',
+      '如果法律不存在，你最想做什么？',
+      '你曾经在公共场合做过什么出格的事？',
+      '你最大的"guilty pleasure"是什么？',
+      '你最想对谁说"去你的"？',
+      '你觉得自己最阴暗的想法是什么？',
+      '你曾经偷过什么东西？',
+      '你最不想被谁知道的一件事是？',
+      '如果让你在一个荒岛上生活一年，只能带三样？',
+      '你最不想被谁知道的一件事是什么？',
+      '如果可以删除人生中的一段记忆，你会删哪段？',
+      '你觉得自己精神正常吗？',
+      '你人生中最后悔没做的一件事？',
+      '如果你可以隐身一天，你会去做什么？',
+      '你对哪个"禁忌话题"其实特别感兴趣？',
+      '如果可以永远不老但必须失去一样东西，你选失去什么？',
+      '你最近一次肾上腺素飙升的经历？',
+      '最接近死亡的一次经历？',
+      '你梦到过最离谱的梦是什么？',
+      '你私下搜索过最奇怪的问题是什么？'
+    ],
+    dares: [
+      '把你手机铃声换成一首尴尬的歌并播放',
+      '到走廊/阳台大喊"我是Gay"',
+      '把异物放进衣服里保持三十秒',
+      '模仿一种你完全不擅长的才艺',
+      '给一个陌生人发一条你好友申请并说"你好美/帅"',
+      '倒立（或尝试倒立）至少三秒',
+      '用你最不擅长的语言说一段话',
+      '把桌上的东西全部叠成一个塔',
+      '做一个你平时绝对不会做的搞怪自拍',
+      '把左右鞋互换穿，保持五分钟',
+      '即兴编一段rap',
+      '用最浮夸的方式行一个大礼',
+      '吃一小口你认为最难吃的食物组合（安全范围内）',
+      '接受一个人的指定行为（要求疯狂）',
+      '找一根笔夹在上唇和鼻子之间保持到下一场',
+      '用你最夹的声音唱一首歌',
+      '在头上顶一本书绕房间走一圈，掉了重来',
+      '做一个你认为最丑的鬼脸并拍照留念',
+      '在不笑的情况下连续说五遍"哈哈哈"',
+      '用你的非惯用手写一行字并大声念出来'
+    ]
+  },
+  deep: {
+    name: '哲思',
+    icon: '🌌',
+    truths: [
+      '你认为生命的意义是什么？',
+      '如果可以改变过去的一件事，你会改变什么？',
+      '你觉得自己十年后会是什么样子？',
+      '你相不相信命运？为什么？',
+      '你对"幸福"的定义是什么？',
+      '你最大的恐惧来自哪里？',
+      '死亡教会了你什么？',
+      '你觉得真正的自由存在吗？',
+      '你在什么时候感到最孤独？',
+      '如果可以拥有一个超能力，你选什么？为什么？',
+      '你认为什么是真正的勇气？',
+      '你心中有没有一个再也回不去的地方？',
+      '你觉得自己最不可替代的价值是什么？',
+      '如果你能给自己写一封信，会写什么？',
+      '你相信有平行宇宙吗？另一个你在做什么？',
+      '你最后悔没有对谁说再见？',
+      '你觉得善良是天生的还是选择的结果？',
+      '你的童年最深刻的记忆是什么？',
+      '如果你可以问世界一个问题并得到真正答案，你会问什么？',
+      '你觉得一个人成熟的标志是什么？'
+    ],
+    dares: [
+      '闭眼，快速说出你想到的第一件事',
+      '用纸和笔画出你此刻的心情',
+      '对在场的人说一段你想对世界说的话',
+      '说出现在心中最强烈的感受',
+      '保持一个指定姿势直到下一轮结束',
+      '盯着天花板想你最想念的人，然后说一句想说的话',
+      '在纸上写下一个你想要的东西，再送给一个人',
+      '用一个词形容你此刻的状态，大声喊出来',
+      '闭上眼睛，让别人引导你做三个动作',
+      '用最低沉和最轻快的声音说同一句话',
+      '为你左手边的人写一句祝福放在他/她手心',
+      '保持微笑持续十秒，观察自己情绪的变化',
+      '写下三件你感恩的事，读给所有人听',
+      '闭上眼睛想一个你想道歉的人，然后说"对不起"',
+      '抱紧一个东西让你觉得放松',
+      '握紧左手边一个人的手十秒，描述这个过程的感受',
+      '分享窗外的一个画面到朋友圈',
+      '找一张纸，用非惯用手画下你此刻脑海中浮现的第一样东西',
+      '轻声哼唱一首你小时候最熟悉的歌谣',
+      '给你最敬佩的人写一句不超过十个字的致敬语，念出来'
+    ]
+  }
+};
+
+// ────────────────────────
+//  GAME STATE
+// ────────────────────────
+let currentMode = 'truth';       // 'truth' | 'dare'
+let currentCategory = 'classic'; // deck key
+let drawnHistory = [];           // { type, text, category, time }
+let deckStates = {};             // per-category shuffled decks
+
+// Initialize decks
+Object.keys(cardDecks).forEach(key => {
+  deckStates[key] = { truth: [], dare: [] };
+  reshuffleDeck(key, 'truth');
+  reshuffleDeck(key, 'dare');
+});
+
+function reshuffleDeck(catKey, mode) {
+  const cards = [...cardDecks[catKey][mode === 'truth' ? 'truths' : 'dares']];
+  // Fisher-Yates shuffle
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  deckStates[catKey][mode] = cards;
+}
+
+function getDeck() {
+  return deckStates[currentCategory][currentMode];
+}
+
+function remainCount() {
+  return getDeck().length;
+}
+
+function drawCard() {
+  const deck = getDeck();
+  if (deck.length === 0) {
+    reshuffleDeck(currentCategory, currentMode);
+    showShuffleHint();
+  }
+  const card = deck.pop();
+  // Record history
+  drawnHistory.unshift({
+    type: currentMode,
+    text: card,
+    category: currentCategory,
+    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  });
+  // Keep only last 100
+  if (drawnHistory.length > 100) drawnHistory.length = 100;
+  return card;
+}
+
+// ────────────────────────
+//  UI ELEMENTS
+// ────────────────────────
+const cardEl = document.getElementById('theCard');
+const cardContent = document.getElementById('cardContent');
+const cardBadge = document.getElementById('cardBadge');
+const cardCatTag = document.getElementById('cardCatTag');
+const drawBtn = document.getElementById('drawBtn');
+const statDrawn = document.getElementById('statDrawn');
+const statRemain = document.getElementById('statRemain');
+const shuffleHint = document.getElementById('shuffleHint');
+const historyPanel = document.getElementById('historyPanel');
+const historyOverlay = document.getElementById('historyOverlay');
+const historyList = document.getElementById('historyList');
+const historyToggle = document.getElementById('historyToggle');
+const historyClear = document.getElementById('historyClear');
+const remainPanel = document.getElementById('remainPanel');
+const remainOverlay = document.getElementById('remainOverlay');
+const remainGrid = document.getElementById('remainGrid');
+const remainSubtitle = document.getElementById('remainSubtitle');
+const remainToggle = document.getElementById('remainToggle');
+const categoriesEl = document.getElementById('categories');
+const modeToggle = document.getElementById('modeToggle');
+
+// ────────────────────────
+//  RENDER CATEGORIES
+// ────────────────────────
+function renderCategories() {
+  categoriesEl.innerHTML = '';
+  Object.entries(cardDecks).forEach(([key, deck]) => {
+    const pill = document.createElement('button');
+    pill.className = 'cat-pill' + (key === currentCategory ? ' active' : '');
+    pill.textContent = deck.name;
+    pill.addEventListener('click', () => {
+      currentCategory = key;
+      renderCategories();
+      updateStats();
+      if (remainPanel.classList.contains('open')) updateRemainUI();
+      // Reset card display
+      cardContent.innerHTML = '点击下方按钮<br>抽取你的第一张卡牌';
+      cardBadge.textContent = currentMode === 'truth' ? 'TRUTH' : 'DARE';
+      cardEl.className = 'card ' + (currentMode === 'truth' ? 'truth-card' : 'dare-card');
+      cardCatTag.textContent = '';
+    });
+    categoriesEl.appendChild(pill);
+  });
+}
+renderCategories();
+
+// ────────────────────────
+//  MODE TOGGLE
+// ────────────────────────
+modeToggle.addEventListener('click', (e) => {
+  const btn = e.target.closest('.mode-btn');
+  if (!btn) return;
+  currentMode = btn.dataset.mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cardBadge.textContent = currentMode === 'truth' ? 'TRUTH' : 'DARE';
+  cardEl.className = 'card ' + (currentMode === 'truth' ? 'truth-card' : 'dare-card');
+  cardContent.innerHTML = '点击下方按钮<br>抽取你的第一张卡牌';
+  cardCatTag.textContent = '';
+  updateStats();
+  if (remainPanel.classList.contains('open')) updateRemainUI();
+  // Re-apply pulse if needed
+  if (remainCount() > 0 && !drawBtn.classList.contains('pulse')) {
+    drawBtn.classList.add('pulse');
+  }
+});
+
+// ────────────────────────
+//  DRAW CARD
+// ────────────────────────
+let isAnimating = false;
+
+drawBtn.addEventListener('click', () => {
+  if (isAnimating) return;
+  isAnimating = true;
+  drawBtn.classList.remove('pulse');
+
+  // Leaving animation
+  cardEl.classList.add('leaving');
+
+  setTimeout(() => {
+    const card = drawCard();
+    cardEl.classList.remove('leaving');
+    cardContent.textContent = card;
+    cardBadge.textContent = currentMode === 'truth' ? 'TRUTH' : 'DARE';
+    cardEl.className = 'card entering ' + (currentMode === 'truth' ? 'truth-card' : 'dare-card');
+    cardCatTag.textContent = cardDecks[currentCategory].name;
+
+    setTimeout(() => {
+      cardEl.classList.remove('entering');
+      isAnimating = false;
+      drawBtn.classList.add('pulse');
+    }, 550);
+
+    updateStats();
+    updateHistoryUI();
+    if (remainPanel.classList.contains('open')) updateRemainUI();
+  }, 300);
+});
+
+// ────────────────────────
+//  STATS
+// ────────────────────────
+function updateStats() {
+  statDrawn.textContent = drawnHistory.length;
+  statRemain.textContent = remainCount();
+}
+updateStats();
+
+// ────────────────────────
+//  SHUFFLE HINT
+// ────────────────────────
+function showShuffleHint() {
+  shuffleHint.classList.add('visible');
+  setTimeout(() => shuffleHint.classList.remove('visible'), 2000);
+}
+
+// ────────────────────────
+//  HISTORY PANEL
+// ────────────────────────
+function updateHistoryUI() {
+  if (drawnHistory.length === 0) {
+    historyList.innerHTML = '<div class="history-empty">还没有抽取过卡牌</div>';
+    return;
+  }
+  historyList.innerHTML = drawnHistory.slice(0, 30).map(h => `
+    <div class="history-item">
+      <span class="h-type ${h.type}">${h.type === 'truth' ? '真心话' : '大冒险'}</span>
+      <span class="h-text">${h.text}</span>
+      <span style="color:var(--text-dim);font-size:0.65rem;flex-shrink:0;">${h.time}</span>
+    </div>
+  `).join('');
+}
+updateHistoryUI();
+
+function openHistory() {
+  closeRemain();
+  historyPanel.classList.add('open');
+  historyOverlay.classList.add('show');
+  updateHistoryUI();
+}
+function closeHistory() {
+  historyPanel.classList.remove('open');
+  historyOverlay.classList.remove('show');
+}
+
+historyToggle.addEventListener('click', openHistory);
+historyOverlay.addEventListener('click', closeHistory);
+historyClear.addEventListener('click', () => {
+  drawnHistory = [];
+  updateHistoryUI();
+  updateStats();
+  updateRemainUI();
+  showToast('历史记录已清除');
+});
+
+// ────────────────────────
+//  REMAINING CARDS PANEL
+// ────────────────────────
+function updateRemainUI() {
+  const deck = getDeck();
+  const modeLabel = currentMode === 'truth' ? '真心话' : '大冒险';
+  const catLabel = cardDecks[currentCategory].icon + ' ' + cardDecks[currentCategory].name;
+  remainSubtitle.textContent = `${catLabel} · ${modeLabel} · 剩余 ${deck.length} 张`;
+
+  if (deck.length === 0) {
+    remainGrid.innerHTML = '<div class="remain-empty">牌堆已空，下次抽牌将自动洗牌</div>';
+    return;
+  }
+
+  remainGrid.innerHTML = deck.map((text, i) => {
+    const miniClass = currentMode === 'truth' ? 'truth-card-mini' : 'dare-card-mini';
+    return `
+      <div class="remain-card-mini ${miniClass}">
+        <div class="rm-index">#${i + 1}</div>
+        <div>${text}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openRemain() {
+  closeHistory();
+  remainPanel.classList.add('open');
+  remainOverlay.classList.add('show');
+  updateRemainUI();
+}
+function closeRemain() {
+  remainPanel.classList.remove('open');
+  remainOverlay.classList.remove('show');
+}
+
+remainToggle.addEventListener('click', openRemain);
+remainOverlay.addEventListener('click', closeRemain);
+
+// ────────────────────────
+//  TOAST
+// ────────────────────────
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2100);
+}
+
+// ────────────────────────
+//  KEYBOARD SHORTCUTS
+// ────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  switch (e.key.toLowerCase()) {
+    case ' ':
+    case 'enter':
+      e.preventDefault();
+      drawBtn.click();
+      break;
+    case 't':
+      document.querySelector('[data-mode="truth"]').click();
+      break;
+    case 'd':
+      document.querySelector('[data-mode="dare"]').click();
+      break;
+    case 'h':
+      if (historyPanel.classList.contains('open')) closeHistory();
+      else openHistory();
+      break;
+    case 'r':
+      if (remainPanel.classList.contains('open')) closeRemain();
+      else openRemain();
+      break;
+    case 'escape':
+      if (historyPanel.classList.contains('open')) closeHistory();
+      if (remainPanel.classList.contains('open')) closeRemain();
+      break;
+  }
+});
+
+// ────────────────────────
+//  INIT
+// ────────────────────────
+cardEl.className = 'card truth-card';
+cardBadge.textContent = 'TRUTH';
+updateStats();
+
+// ────────────────────────
+//  SHAKE TO DRAW (mobile)
+// ────────────────────────
+let lastShakeTime = 0;
+let shakeAccum = 0;
+const SHAKE_THRESHOLD = 22;
+const SHAKE_COOLDOWN = 1500;
+
+if (window.DeviceMotionEvent) {
+  window.addEventListener('devicemotion', (e) => {
+    const acc = e.accelerationIncludingGravity;
+    if (!acc) return;
+    const magnitude = Math.sqrt(
+      (acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2
+    );
+    if (magnitude > SHAKE_THRESHOLD) {
+      const now = Date.now();
+      if (now - lastShakeTime > SHAKE_COOLDOWN) {
+        lastShakeTime = now;
+        drawBtn.click();
+        if (navigator.vibrate) navigator.vibrate(30);
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
